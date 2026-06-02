@@ -23,4 +23,17 @@ public class Carta
         this.tipo = tipo;
         this.valor_numerico = valor_numerico;
     }
+    
+    //getters
+    public Cor getCor(Carta carta){
+        return carta.cor;
+    }
+    
+    public Tipo getTipo(Carta carta){
+        return carta.tipo;
+    }
+    
+    public int getValor(Carta carta){
+        return carta.valor_numerico;
+    }
 }
