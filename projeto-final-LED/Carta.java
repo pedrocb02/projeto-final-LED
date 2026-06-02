@@ -36,4 +36,9 @@ public class Carta
     public int getValor(Carta carta){
         return carta.valor_numerico;
     }
+    
+    public boolean dapaJoga(Carta carta){
+        return false;
+        //implementar @ANA
+    }
 }
