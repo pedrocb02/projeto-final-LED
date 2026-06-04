@@ -11,5 +11,5 @@ comment3.target=Carta.Tipo\ getTipo(Carta)
 comment4.params=carta
 comment4.target=int\ getValor(Carta)
 comment5.params=carta
-comment5.target=boolean\ dapaJoga(Carta)
+comment5.target=boolean\ cartaJogavel(Carta)
 numComments=6

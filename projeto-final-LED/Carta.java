@@ -25,20 +25,25 @@ public class Carta
     }
     
     //getters
-    public Cor getCor(Carta carta){
-        return carta.cor;
+    public Cor getCor(){
+        return this.cor;
     }
     
-    public Tipo getTipo(Carta carta){
-        return carta.tipo;
+    public Tipo getTipo(){
+        return this.tipo;
     }
     
-    public int getValor(Carta carta){
-        return carta.valor_numerico;
+    public int getValor(){
+        return this.valor_numerico;
     }
     
-    public boolean dapaJoga(Carta carta){
-        return false;
-        //implementar @ANA
+    public boolean cartaJogavel(Carta cartaDaMesa){
+        boolean jogavel = false;
+        //this = carta na mao do jogador
+        //cartaDaMesa = topo da pilha
+        if(cartaDaMesa.cor == this.cor || this.cor == Cor.PRETO || this.tipo == cartaDaMesa.tipo){
+            jogavel = true;
+        }
+        return jogavel;
     }
 }
