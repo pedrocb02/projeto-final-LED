@@ -29,4 +29,6 @@ public class Carta {
             return "[" + cor + " " + tipo + "]"; // Cartas de ação (+2, Bloquear, Inverter)
         }
     }
+    
+
 }
