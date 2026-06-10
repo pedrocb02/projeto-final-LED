@@ -1,9 +1,10 @@
 #BlueJ class context
 comment0.target=Carta
-comment0.text=\r\n\ Classe\ que\ representa\ uma\ carta\ do\ jogo\ Uno.\r\n
+comment0.text=\r\n\ Classe\ que\ representa\ uma\ carta\ do\ jogo\ Uno.\r\n\ *\ @author\ Ana\ Paula\ Barros\ de\ Jesus\r\n\ @author\ Julie\ Quaglio\ da\ Silva\ Gordo\r\n\ @author\ Pedro\ Cione\ Barbosa\r\n\ @author\ Vitor\ Seiji\ Colombo\ Nishida\r\n
 comment1.params=cor\ tipo\ valor_numerico
 comment1.target=Carta(Carta.Cor,\ Carta.Tipo,\ int)
-comment1.text=\r\n\ Construtor\ para\ objetos\ da\ classe\ Carta\r\n
+comment1.text=\r\n\ Construtor\ para\ objetos\ da\ classe\ Carta.\r\n\ *\ @param\ cor\ A\ cor\ atribu\u00EDda\ \u00E0\ carta.\r\n\ @param\ tipo\ O\ tipo\ de\ carta\ (n\u00FAmero\ ou\ a\u00E7\u00E3o).\r\n\ @param\ valor_numerico\ O\ valor\ da\ carta\ caso\ seja\ do\ tipo\ NUMERO.\r\n
 comment2.params=
 comment2.target=java.lang.String\ toString()
+comment2.text=\r\n\ Retorna\ uma\ representa\u00E7\u00E3o\ em\ texto\ da\ carta\ para\ exibi\u00E7\u00E3o\ no\ terminal.\r\n\ *\ @return\ Uma\ string\ formatada\ no\ padr\u00E3o\ [COR\ NUMERO],\ [TIPO]\ ou\ [COR\ TIPO].\r\n
 numComments=3

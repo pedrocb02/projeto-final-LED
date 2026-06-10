@@ -5,21 +5,32 @@ import java.util.Scanner;
 
 /**
  * Classe que gerencia a partida interativa do jogo Uno pelo terminal.
+ * Controla os turnos, regras de jogadas, distribuição de cartas e interações.
  */
 public class Mesa {
 
-    // =====================================================================
-    //  ESTRUTURA DE DADOS SIMULADA (substitui ListaDuplamenteLigadaCircular)
-    //  Mantém a semântica de lista circular com sentido configurável.
-    // =====================================================================
+    /** Estrutura que mantém os jogadores da partida. */
     private List<Jogador> listaJogadores = new LinkedList<>();
+    
+    /** Índice do jogador atual na lista de jogadores. */
     private int indiceAtual = 0;
 
+    /** Baralho principal de onde as cartas são compradas. */
     private List<Carta> baralho;
+    
+    /** Pilha de cartas descartadas (o topo dita as regras da rodada). */
     private List<Carta> mesaDescarte;
+    
+    /** Flag que indica a direção atual do jogo (verdadeiro para horário). */
     private boolean sentidoHorario;
+    
+    /** Objeto Scanner para capturar entradas de texto do terminal. */
     private Scanner entrada;
 
+    /**
+     * Construtor da classe Mesa.
+     * Inicializa os baralhos, define o sentido inicial e embaralha as cartas.
+     */
     public Mesa() {
         this.baralho      = new LinkedList<>();
         this.mesaDescarte = new LinkedList<>();
@@ -30,9 +41,9 @@ public class Mesa {
         Collections.shuffle(baralho);
     }
 
-    // =====================================================================
-    //  INICIALIZAÇÃO
-    // =====================================================================
+    /**
+     * Inicializa o baralho com as 108 cartas tradicionais do Uno.
+     */
     private void inicializarBaralho() {
         for (Carta.Cor cor : Carta.Cor.values()) {
             if (cor == Carta.Cor.PRETO) {
@@ -51,6 +62,9 @@ public class Mesa {
         }
     }
 
+    /**
+     * Configura a quantidade de jogadores e seus respectivos nomes interagindo via terminal.
+     */
     public void configurarJogadores() {
         System.out.print("Quantas pessoas vão jogar (mínimo 2)? ");
         int qtd = lerInteiro();
@@ -67,15 +81,16 @@ public class Mesa {
         }
     }
 
+    /**
+     * Prepara a partida distribuindo cartas para os jogadores e definindo a carta inicial da mesa.
+     */
     public void prepararPartida() {
-        // Distribui 7 cartas para cada jogador
         for (Jogador j : listaJogadores) {
             for (int i = 0; i < 7; i++) {
                 j.adicionarCarta(baralho.remove(0));
             }
         }
 
-        // Abre a primeira carta válida (não pode ser coringa)
         Carta primeiraCarta = baralho.remove(0);
         while (primeiraCarta.cor == Carta.Cor.PRETO) {
             baralho.add(primeiraCarta);
@@ -84,13 +99,17 @@ public class Mesa {
         mesaDescarte.add(primeiraCarta);
     }
 
-    // =====================================================================
-    //  NAVEGAÇÃO CIRCULAR
-    // =====================================================================
+    /**
+     * Retorna o jogador que tem o direito de jogar neste turno.
+     * * @return Objeto Jogador correspondente ao turno atual.
+     */
     private Jogador jogadorAtual() {
         return listaJogadores.get(indiceAtual);
     }
 
+    /**
+     * Avança o turno atual para o próximo jogador, respeitando o sentido da roda (horário/anti-horário).
+     */
     private void avancarTurno() {
         int n = listaJogadores.size();
         if (sentidoHorario) {
@@ -100,37 +119,28 @@ public class Mesa {
         }
     }
 
-    // =====================================================================
-    //  REGRAS — VALIDAÇÃO DE JOGADA
-    //  BUG ORIGINAL: só validava número igual OU carta preta.
-    //  CORREÇÃO: valida mesma cor, mesmo número, mesmo tipo de ação, ou coringa.
-    // =====================================================================
+    /**
+     * Verifica se uma jogada é válida comparando a carta escolhida com a carta no topo da mesa.
+     * * @param cartaJogada A carta que o jogador deseja jogar.
+     * @param cartaTopo A carta que se encontra atualmente no topo do descarte.
+     * @return true se a jogada respeita as regras, false caso contrário.
+     */
     private boolean jogadaEValida(Carta cartaJogada, Carta cartaTopo) {
-        // Coringa sempre pode ser jogado
         if (cartaJogada.cor == Carta.Cor.PRETO) return true;
-
-        // Mesma cor que o topo
         if (cartaJogada.cor == cartaTopo.cor) return true;
-
-        // Mesma cor da cor escolhida (quando o topo é um coringa)
-        // — cartaTopo.cor já foi atualizada pelo escolherCor(), então a linha acima cobre isso
-
-        // Mesmo número
         if (cartaJogada.tipo == Carta.Tipo.NUMERO
                 && cartaTopo.tipo == Carta.Tipo.NUMERO
                 && cartaJogada.valor_numerico == cartaTopo.valor_numerico) return true;
-
-        // Mesmo tipo de ação (ex.: Bloquear em cima de Bloquear de outra cor)
         if (cartaJogada.tipo != Carta.Tipo.NUMERO
                 && cartaJogada.tipo == cartaTopo.tipo) return true;
 
         return false;
     }
 
-    // =====================================================================
-    //  ESCOLHA DE COR PARA CORINGAS
-    //  BUG ORIGINAL: coringas nunca pediam cor — topo ficava PRETO para sempre.
-    // =====================================================================
+    /**
+     * Solicita ao jogador via terminal que escolha uma nova cor ao jogar um coringa.
+     * * @return A cor escolhida pelo jogador.
+     */
     private Carta.Cor escolherCor() {
         System.out.println("Escolha a nova cor:");
         System.out.println("  1 - VERMELHO");
@@ -151,33 +161,25 @@ public class Mesa {
         }
     }
 
-    // =====================================================================
-    //  EFEITOS DAS CARTAS ESPECIAIS
-    //  BUG ORIGINAL:
-    //    • MUDA_COR caia no else e apenas avançava o turno, sem trocar a cor.
-    //    • MAIS_QUATRO não pedia cor ao jogador.
-    //    • Quando chamado após compra+jogo imediato, o turno era avançado
-    //      duas vezes (uma no continue + uma aqui).
-    //  CORREÇÃO: processarEfeitoCarta agora SEMPRE avança o turno internamente
-    //  e retorna; o loop principal não avança mais de forma independente.
-    // =====================================================================
+    /**
+     * Processa os efeitos das cartas especiais (Inverter, Bloquear, +2, +4, Muda Cor)
+     * e cuida do avanço de turnos subsequentes de acordo com as regras de cada carta.
+     * * @param carta A carta recém-jogada que ativará o efeito na mesa.
+     */
     private void processarEfeitoCarta(Carta carta) {
         Carta topoAtual = mesaDescarte.get(mesaDescarte.size() - 1);
 
         switch (carta.tipo) {
-
             case INVERTER:
                 sentidoHorario = !sentidoHorario;
                 System.out.println("O sentido do jogo foi invertido!");
                 avancarTurno();
                 break;
-
             case BLOQUEAR:
                 avancarTurno();
                 System.out.println("PAAA!!! Acesso negado " + jogadorAtual().getNome() + " foi bloqueado e perde a vez!");
                 avancarTurno();
                 break;
-
             case MAIS_DOIS:
                 avancarTurno();
                 Jogador vitima2 = jogadorAtual();
@@ -185,15 +187,12 @@ public class Mesa {
                 comprarCartas(vitima2, 2);
                 avancarTurno();
                 break;
-
             case MUDA_COR:
-                // Pede cor e atualiza a cor do topo (a própria carta no descarte)
                 Carta.Cor novaCor = escolherCor();
                 topoAtual.cor = novaCor;
                 System.out.println("Nova cor escolhida: " + novaCor);
                 avancarTurno();
                 break;
-
             case MAIS_QUATRO:
                 Carta.Cor novaCorM4 = escolherCor();
                 topoAtual.cor = novaCorM4;
@@ -204,17 +203,18 @@ public class Mesa {
                 comprarCartas(vitima4, 4);
                 avancarTurno();
                 break;
-
             default:
-                // Carta numérica normal
                 avancarTurno();
                 break;
         }
     }
 
-    // =====================================================================
-    //  UTILITÁRIO — compra cartas com reciclagem do descarte se necessário
-    // =====================================================================
+    /**
+     * Executa a compra de um número específico de cartas do baralho para um jogador.
+     * Recicla a mesa de descarte caso o baralho esvazie durante a compra.
+     * * @param jogador O jogador que deve receber as cartas.
+     * @param quantidade A quantidade de cartas a serem compradas.
+     */
     private void comprarCartas(Jogador jogador, int quantidade) {
         for (int i = 0; i < quantidade; i++) {
             if (baralho.isEmpty()) {
@@ -229,6 +229,9 @@ public class Mesa {
         }
     }
 
+    /**
+     * Pega todas as cartas descartadas (exceto o topo) e as mistura para formar um novo baralho.
+     */
     private void reciclarDescarte() {
         if (mesaDescarte.size() <= 1) return;
         Carta topo = mesaDescarte.remove(mesaDescarte.size() - 1);
@@ -239,9 +242,11 @@ public class Mesa {
         System.out.println("Descarte reciclado no baralho!");
     }
 
-    // =====================================================================
-    //  UTILITÁRIO — leitura segura de inteiro
-    // =====================================================================
+    /**
+     * Utilitário para leitura segura de números inteiros via terminal.
+     * Previne exceptions caso o utilizador digite letras onde se espera números.
+     * * @return O número inteiro digitado.
+     */
     private int lerInteiro() {
         while (!entrada.hasNextInt()) {
             System.out.print("Digite um número válido: ");
@@ -252,9 +257,10 @@ public class Mesa {
         return v;
     }
 
-    // =====================================================================
-    //  LOOP PRINCIPAL
-    // =====================================================================
+    /**
+     * Loop principal de execução do jogo interativo.
+     * Gerencia rodadas, validação de mãos e interação do usuário.
+     */
     public void jogar() {
         configurarJogadores();
         prepararPartida();
@@ -275,7 +281,6 @@ public class Mesa {
             jogadorDaVez.imprimirMao();
             System.out.println("--------------------------------------------------");
 
-            // Verifica se o jogador tem pelo menos uma carta jogável
             boolean temOpcoes = false;
             for (Carta c : jogadorDaVez.getMao()) {
                 if (jogadaEValida(c, topoMesa)) {
@@ -285,7 +290,6 @@ public class Mesa {
             }
 
             if (!temOpcoes) {
-                // --- SEM OPÇÕES: compra uma carta ---
                 System.out.println("Você não tem cartas válidas! Pressione ENTER para comprar uma carta.");
                 entrada.nextLine();
 
@@ -296,10 +300,6 @@ public class Mesa {
                     jogadorDaVez.adicionarCarta(comprada);
                     System.out.println("Você comprou: " + comprada);
 
-                    // BUG ORIGINAL: carta comprada era removida do baralho mas
-                    // nunca adicionada à mão antes de tentar jogá-la.
-                    // CORREÇÃO: adicionamos primeiro, e se for jogável perguntamos
-                    // se quer remover da mão e descartar.
                     if (jogadaEValida(comprada, topoMesa)) {
                         System.out.print("Essa carta é válida! Deseja jogá-la agora? (S/N): ");
                         String resp = entrada.nextLine().trim().toUpperCase();
@@ -310,9 +310,6 @@ public class Mesa {
 
                             if (verificarVitoria(jogadorDaVez)) return;
 
-                            // BUG ORIGINAL: o continue pulava o avancarTurno do final,
-                            // mas processarEfeitoCarta não avançava nesse caminho.
-                            // CORREÇÃO: processarEfeitoCarta sempre avança o turno.
                             processarEfeitoCarta(comprada);
                             continue;
                         }
@@ -325,7 +322,6 @@ public class Mesa {
                 avancarTurno();
 
             } else {
-                // --- COM OPÇÕES: jogador escolhe a carta ---
                 Carta cartaEscolhida = null;
 
                 while (cartaEscolhida == null) {
@@ -356,6 +352,12 @@ public class Mesa {
         }
     }
 
+    /**
+     * Verifica se o jogador especificado atingiu as condições de vitória (0 cartas) 
+     * ou alerta de "UNO!" (1 carta).
+     * * @param jogador O jogador a ser avaliado.
+     * @return true se o jogador venceu, false caso contrário.
+     */
     private boolean verificarVitoria(Jogador jogador) {
         if (jogador.getQuantidadeCartas() == 0) {
             System.out.println("VITÓRIA! " + jogador.getNome() + " venceu o jogo de Uno!");
@@ -367,6 +369,10 @@ public class Mesa {
         return false;
     }
 
+    /**
+     * Método de entrada do programa.
+     * * @param args Argumentos de linha de comando.
+     */
     public static void main(String[] args) {
         Mesa mesa = new Mesa();
         mesa.jogar();
