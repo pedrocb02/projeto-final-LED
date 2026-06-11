@@ -1,66 +1,60 @@
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.ActionEvent;
+import java.awt.geom.RoundRectangle2D;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 
 /**
- * Interface Gráfica para o jogo Uno, utilizando as classes Carta e Jogador.
- * Estende JFrame para fornecer uma janela de jogo visual e iterativa utilizando a API Swing.
+ * Interface grafica para o jogo Uno, utilizando as classes Carta e Jogador.
  */
 public class UnoGUI extends JFrame {
 
+    private static final Color COR_FUNDO = new Color(18, 24, 32);
+    private static final Color COR_PAINEL = new Color(29, 38, 50);
+    private static final Color COR_MESA = new Color(24, 118, 82);
+    private static final Color COR_MESA_CLARA = new Color(39, 157, 109);
+    private static final Color COR_TEXTO = new Color(245, 247, 250);
+    private static final Color COR_TEXTO_SUAVE = new Color(190, 202, 214);
+    private static final Color COR_DESTAQUE = new Color(255, 196, 64);
+    private static final Dimension TAMANHO_CARTA = new Dimension(104, 156);
+
     /** Lista de jogadores participantes da partida. */
     private List<Jogador> listaJogadores = new LinkedList<>();
-    
-    /** Índice que aponta para o jogador dono do turno atual. */
+
+    /** Indice que aponta para o jogador dono do turno atual. */
     private int indiceAtual = 0;
-    
+
     /** Estrutura do baralho principal do jogo. */
     private List<Carta> baralho = new LinkedList<>();
-    
-    /** Pilha da mesa onde as cartas descartadas são armazenadas. */
+
+    /** Pilha da mesa onde as cartas descartadas sao armazenadas. */
     private List<Carta> mesaDescarte = new LinkedList<>();
-    
-    /** Define se a rotação de turnos segue no sentido horário. */
+
+    /** Define se a rotacao de turnos segue no sentido horario. */
     private boolean sentidoHorario = true;
 
-    // Componentes da Interface Gráfica
-    /** Painel central que abriga o topo do descarte e o botão de compra de cartas. */
     private JPanel painelMesa;
-    
-    /** Painel inferior com scroll onde a mão de cartas do jogador atual é exibida. */
     private JPanel painelMao;
-    
-    /** Label descritiva do status da partida (Quem joga, direção, quantidade de cartas). */
     private JLabel lblStatus;
-    
-    /** Label com o título sobre a carta do topo. */
     private JLabel lblTopo;
-    
-    /** Botão visual que representa o monte de compra do baralho. */
+    private JLabel lblJogadores;
     private JButton btnComprar;
 
-    /**
-     * Construtor da interface gráfica do UNO.
-     * Configura a janela, seu tamanho e dispara o setup inicial da partida.
-     */
     public UnoGUI() {
-        super("Jogo Uno Gráfico");
+        super("UNO - Mesa de Jogo");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setSize(800, 600);
+        setMinimumSize(new Dimension(900, 660));
+        setSize(980, 720);
         setLocationRelativeTo(null);
         setLayout(new BorderLayout());
+        getContentPane().setBackground(COR_FUNDO);
 
         configurarPartidaGUI();
     }
 
-    /**
-     * Utiliza caixas de diálogo do Swing para capturar o número de jogadores e seus nomes.
-     */
     private void configurarPartidaGUI() {
-        String qtdStr = JOptionPane.showInputDialog(this, "Quantas pessoas vão jogar (mínimo 2)?", "Configuração", JOptionPane.QUESTION_MESSAGE);
+        String qtdStr = JOptionPane.showInputDialog(this, "Quantas pessoas vao jogar (minimo 2)?", "Configuracao", JOptionPane.QUESTION_MESSAGE);
         if (qtdStr == null) System.exit(0);
 
         try {
@@ -74,16 +68,12 @@ public class UnoGUI extends JFrame {
             }
 
             iniciarJogo();
-
         } catch (NumberFormatException ex) {
-            JOptionPane.showMessageDialog(this, "Quantidade inválida. Tente novamente.");
+            JOptionPane.showMessageDialog(this, "Quantidade invalida. Tente novamente.");
             configurarPartidaGUI();
         }
     }
 
-    /**
-     * Engatilha o fluxo inicial do jogo: inicializa baralho, distribui cartas e desenha a UI.
-     */
     private void iniciarJogo() {
         inicializarBaralho();
         Collections.shuffle(baralho);
@@ -92,45 +82,81 @@ public class UnoGUI extends JFrame {
         atualizarEcra();
     }
 
-    /**
-     * Instancia e posiciona os painéis principais do Swing e seus componentes básicos.
-     */
     private void construirInterfacePrincipal() {
-        JPanel painelStatus = new JPanel(new GridLayout(2, 1));
-        painelStatus.setBackground(new Color(40, 40, 40));
+        JPanel painelStatus = new JPanel(new GridLayout(3, 1, 0, 4));
+        painelStatus.setBackground(COR_PAINEL);
+        painelStatus.setBorder(BorderFactory.createEmptyBorder(14, 18, 14, 18));
+
         lblStatus = new JLabel("", SwingConstants.CENTER);
-        lblStatus.setForeground(Color.WHITE);
-        lblStatus.setFont(new Font("Arial", Font.BOLD, 16));
+        lblStatus.setForeground(COR_TEXTO);
+        lblStatus.setFont(new Font("SansSerif", Font.BOLD, 18));
+
         lblTopo = new JLabel("", SwingConstants.CENTER);
-        lblTopo.setForeground(Color.YELLOW);
-        lblTopo.setFont(new Font("Arial", Font.BOLD, 24));
+        lblTopo.setForeground(COR_DESTAQUE);
+        lblTopo.setFont(new Font("SansSerif", Font.BOLD, 24));
+
+        lblJogadores = new JLabel("", SwingConstants.CENTER);
+        lblJogadores.setForeground(COR_TEXTO_SUAVE);
+        lblJogadores.setFont(new Font("SansSerif", Font.PLAIN, 13));
+
         painelStatus.add(lblStatus);
         painelStatus.add(lblTopo);
+        painelStatus.add(lblJogadores);
         add(painelStatus, BorderLayout.NORTH);
 
-        painelMesa = new JPanel(new GridBagLayout()); 
-        painelMesa.setBackground(new Color(34, 139, 34)); 
-        
-        btnComprar = new JButton("Baralho (Comprar)");
-        btnComprar.setPreferredSize(new Dimension(100, 150));
-        btnComprar.setFont(new Font("Arial", Font.BOLD, 12));
+        painelMesa = new JPanel(new GridBagLayout()) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                GradientPaint fundo = new GradientPaint(0, 0, COR_MESA_CLARA, getWidth(), getHeight(), COR_MESA);
+                g2.setPaint(fundo);
+                g2.fillRect(0, 0, getWidth(), getHeight());
+
+                g2.setColor(new Color(255, 255, 255, 26));
+                g2.setStroke(new BasicStroke(3));
+                int ovalLargura = Math.max(420, getWidth() - 180);
+                int ovalAltura = Math.max(230, getHeight() - 90);
+                g2.drawOval((getWidth() - ovalLargura) / 2, (getHeight() - ovalAltura) / 2, ovalLargura, ovalAltura);
+                g2.dispose();
+            }
+        };
+        painelMesa.setBorder(BorderFactory.createEmptyBorder(34, 34, 34, 34));
+
+        btnComprar = new JButton("Comprar") {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                desenharVersoCarta(g2, getWidth(), getHeight());
+                g2.dispose();
+            }
+        };
+        btnComprar.setPreferredSize(TAMANHO_CARTA);
+        btnComprar.setToolTipText("Comprar uma carta do baralho");
+        btnComprar.setContentAreaFilled(false);
+        btnComprar.setBorderPainted(false);
+        btnComprar.setFocusPainted(false);
+        btnComprar.setCursor(new Cursor(Cursor.HAND_CURSOR));
         btnComprar.addActionListener(e -> comprarCartaGUI());
-        
+
         add(painelMesa, BorderLayout.CENTER);
 
         painelMao = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 10));
-        painelMao.setBackground(new Color(60, 60, 60));
+        painelMao.setBackground(COR_FUNDO);
+        painelMao.setBorder(BorderFactory.createEmptyBorder(12, 12, 12, 12));
         JScrollPane scrollMao = new JScrollPane(painelMao);
-        scrollMao.setPreferredSize(new Dimension(800, 170));
+        scrollMao.setPreferredSize(new Dimension(900, 196));
+        scrollMao.setBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, new Color(255, 255, 255, 28)));
+        scrollMao.getViewport().setBackground(COR_FUNDO);
+        scrollMao.getHorizontalScrollBar().setUnitIncrement(18);
         add(scrollMao, BorderLayout.SOUTH);
 
         revalidate();
         repaint();
     }
 
-    /**
-     * Inicializa o baralho com as 108 cartas tradicionais utilizando a classe Carta.
-     */
     private void inicializarBaralho() {
         for (Carta.Cor cor : Carta.Cor.values()) {
             if (cor == Carta.Cor.PRETO) {
@@ -155,9 +181,6 @@ public class UnoGUI extends JFrame {
         }
     }
 
-    /**
-     * Distribui 7 cartas iniciais para cada jogador e puxa a carta inicial para o descarte.
-     */
     private void prepararPartida() {
         for (Jogador j : listaJogadores) {
             for (int i = 0; i < 7; i++) {
@@ -173,17 +196,10 @@ public class UnoGUI extends JFrame {
         mesaDescarte.add(primeiraCarta);
     }
 
-    /**
-     * Obtém a instância do jogador cujo turno está ativo no momento.
-     * * @return O Jogador atual.
-     */
     private Jogador jogadorAtual() {
         return listaJogadores.get(indiceAtual);
     }
 
-    /**
-     * Procede para o próximo turno do jogo, baseando-se na variável de sentido horário.
-     */
     private void avancarTurno() {
         int n = listaJogadores.size();
         if (sentidoHorario) {
@@ -193,12 +209,6 @@ public class UnoGUI extends JFrame {
         }
     }
 
-    /**
-     * Valida se uma carta específica pode ser descartada de acordo com as regras.
-     * * @param cartaJogada A carta selecionada pelo jogador.
-     * @param cartaTopo A carta no topo da mesa.
-     * @return true se a jogada é legal e validada, false caso não seja permitida.
-     */
     private boolean jogadaEValida(Carta cartaJogada, Carta cartaTopo) {
         if (cartaJogada.cor == Carta.Cor.PRETO) return true;
         if (cartaJogada.cor == cartaTopo.cor) return true;
@@ -207,25 +217,23 @@ public class UnoGUI extends JFrame {
         return false;
     }
 
-    /**
-     * Recarrega e repinta a interface gráfica inteira (painel da mesa e da mão) baseado no estado atual da partida.
-     */
     private void atualizarEcra() {
         Jogador atual = jogadorAtual();
         Carta topoMesa = mesaDescarte.get(mesaDescarte.size() - 1);
 
-        String direcao = sentidoHorario ? "Horário" : "Anti-Horário";
-        lblStatus.setText("Vez de: " + atual.getNome() + " | Sentido: " + direcao + " | Baralho: " + baralho.size() + " cartas");
-        lblTopo.setText("Mesa Atual");
+        String direcao = sentidoHorario ? "Horario" : "Anti-horario";
+        lblStatus.setText("Vez de " + atual.getNome() + "  |  Sentido: " + direcao + "  |  Baralho: " + baralho.size() + " cartas");
+        lblTopo.setText("Carta da mesa: " + topoMesa.toString());
+        lblJogadores.setText(resumoJogadores(atual));
 
         painelMesa.removeAll();
-        painelMesa.add(btnComprar); 
-        painelMesa.add(Box.createHorizontalStrut(30)); 
-        
+        painelMesa.add(criarAreaMesa("Baralho", btnComprar));
+        painelMesa.add(Box.createHorizontalStrut(46));
+
         JButton btnTopo = criarBotaoCarta(topoMesa);
-        btnTopo.setEnabled(false); 
-        painelMesa.add(btnTopo);
-        
+        btnTopo.setEnabled(false);
+        painelMesa.add(criarAreaMesa("Descarte", btnTopo));
+
         painelMesa.revalidate();
         painelMesa.repaint();
 
@@ -233,11 +241,13 @@ public class UnoGUI extends JFrame {
         for (Carta carta : atual.getMao()) {
             JButton btnCarta = criarBotaoCarta(carta);
             boolean valida = jogadaEValida(carta, topoMesa);
-            
+
             if (valida) {
                 btnCarta.addActionListener(e -> jogarCarta(carta));
+                btnCarta.setToolTipText("Jogar " + carta.toString());
             } else {
-                btnCarta.setEnabled(false); 
+                btnCarta.setEnabled(false);
+                btnCarta.setToolTipText("Esta carta ainda nao pode ser jogada");
             }
             painelMao.add(btnCarta);
         }
@@ -246,62 +256,24 @@ public class UnoGUI extends JFrame {
         painelMao.repaint();
     }
 
-    /**
-     * Constrói graficamente um componente JButton que ilustra e representa visualmente uma carta do baralho.
-     * * @param carta Objeto lógico da carta que será transformada num botão de UI.
-     * @return Componente JButton esteticamente formatado com renderização 2D.
-     */
     private JButton criarBotaoCarta(Carta carta) {
         JButton btn = new JButton() {
             @Override
             protected void paintComponent(Graphics g) {
-                Graphics2D g2 = (Graphics2D) g;
+                Graphics2D g2 = (Graphics2D) g.create();
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-
-                if (carta.tipo != Carta.Tipo.NUMERO) {
-                    String caminhoImagem = "imagens/" + carta.cor.toString() + "_" + carta.tipo.toString() + ".png";
-                    ImageIcon imagemEspecial = new ImageIcon(caminhoImagem);
-                    
-                    if (imagemEspecial.getImageLoadStatus() == MediaTracker.COMPLETE) {
-                        g2.drawImage(imagemEspecial.getImage(), 0, 0, getWidth(), getHeight(), this);
-                    } else {
-                        desenharCartaPorCodigo(g2, carta, getWidth(), getHeight()); 
-                    }
-                } else {
-                    String caminhoFundo = "imagens/fundo_" + carta.cor.toString().toLowerCase() + ".png";
-                    ImageIcon iconeFundo = new ImageIcon(caminhoFundo);
-                    
-                    if (iconeFundo.getImageLoadStatus() == MediaTracker.COMPLETE) {
-                        g2.drawImage(iconeFundo.getImage(), 0, 0, getWidth(), getHeight(), this);
-                        
-                        g2.setColor(carta.cor == Carta.Cor.AMARELO ? Color.BLACK : Color.WHITE);
-                        String simbolo = String.valueOf(carta.valor_numerico);
-                        
-                        g2.setFont(new Font("Arial", Font.BOLD, 45));
-                        FontMetrics fm = g2.getFontMetrics();
-                        g2.drawString(simbolo, (getWidth() - fm.stringWidth(simbolo)) / 2, (getHeight() / 2) + (fm.getAscent() / 3));
-                        
-                        g2.setFont(new Font("Arial", Font.BOLD, 14));
-                        g2.drawString(simbolo, 8, 20);
-                        g2.translate(getWidth() - 8, getHeight() - 8);
-                        g2.rotate(Math.PI);
-                        g2.drawString(simbolo, 0, 4);
-                        g2.rotate(-Math.PI);
-                        g2.translate(-(getWidth() - 8), -(getHeight() - 8));
-                    } else {
-                        desenharCartaPorCodigo(g2, carta, getWidth(), getHeight()); 
-                    }
-                }
+                desenharCartaPorCodigo(g2, carta, getWidth(), getHeight());
 
                 if (!isEnabled()) {
-                    g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.4f));
-                    g2.setColor(new Color(0, 0, 0, 100));
-                    g2.fillRoundRect(0, 0, getWidth(), getHeight(), 16, 16);
+                    g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.45f));
+                    g2.setColor(new Color(5, 8, 12, 130));
+                    g2.fillRoundRect(2, 2, getWidth() - 8, getHeight() - 10, 22, 22);
                 }
+                g2.dispose();
             }
         };
 
-        btn.setPreferredSize(new Dimension(100, 150));
+        btn.setPreferredSize(TAMANHO_CARTA);
         btn.setContentAreaFilled(false);
         btn.setBorderPainted(false);
         btn.setFocusPainted(false);
@@ -310,40 +282,44 @@ public class UnoGUI extends JFrame {
         return btn;
     }
 
-    /**
-     * Fallback gráfico que desenha nativamente com a API Graphics2D caso falte alguma imagem .png no repositório.
-     * * @param g2 Contexto gráfico 2D do componente.
-     * @param carta Carta a ser desenhada.
-     * @param largura Largura do painel/botão.
-     * @param altura Altura do painel/botão.
-     */
     private void desenharCartaPorCodigo(Graphics2D g2, Carta carta, int largura, int altura) {
-        g2.setColor(obterCorJava(carta.cor));
-        g2.fillRoundRect(0, 0, largura, altura, 16, 16);
-        
+        g2.setColor(new Color(0, 0, 0, 65));
+        g2.fillRoundRect(5, 7, largura - 10, altura - 10, 22, 22);
+
+        Shape cartaClip = new RoundRectangle2D.Double(2, 2, largura - 8, altura - 10, 22, 22);
+        g2.setClip(cartaClip);
+        GradientPaint fundo = new GradientPaint(0, 0, clarear(obterCorJava(carta.cor), 32), largura, altura, escurecer(obterCorJava(carta.cor), 34));
+        g2.setPaint(fundo);
+        g2.fill(cartaClip);
+
+        g2.setColor(new Color(255, 255, 255, 36));
+        g2.fillOval(-largura / 3, -altura / 4, largura, altura / 2);
+
         g2.setColor(Color.WHITE);
-        g2.setStroke(new BasicStroke(3));
-        g2.drawRoundRect(2, 2, largura - 4, altura - 4, 16, 16);
+        g2.setStroke(new BasicStroke(4));
+        g2.drawRoundRect(5, 5, largura - 14, altura - 16, 18, 18);
 
         if (carta.cor != Carta.Cor.PRETO) {
-            g2.rotate(-Math.PI / 6, largura / 2.0, altura / 2.0);
-            g2.fillOval(10, 25, largura - 20, altura - 50);
-            g2.rotate(Math.PI / 6, largura / 2.0, altura / 2.0);
+            g2.rotate(-Math.PI / 7, largura / 2.0, altura / 2.0);
+            g2.setColor(new Color(255, 255, 255, 230));
+            g2.fillOval(12, 33, largura - 28, altura - 66);
+            g2.rotate(Math.PI / 7, largura / 2.0, altura / 2.0);
+        } else {
+            desenharCoresCoringa(g2, largura, altura);
         }
 
         String simbolo = obterSimboloDaCarta(carta);
-        
-        g2.setColor(Color.BLACK);
-        if(carta.cor == Carta.Cor.PRETO) g2.setColor(Color.WHITE); 
-        g2.setFont(new Font("Arial", Font.BOLD, 45));
+
+        g2.setClip(null);
+        g2.setColor(carta.tipo == Carta.Tipo.NUMERO ? Color.BLACK : Color.WHITE);
+        g2.setFont(new Font("SansSerif", Font.BOLD, simbolo.length() > 2 ? 34 : 50));
         FontMetrics fm = g2.getFontMetrics();
         int xCentro = (largura - fm.stringWidth(simbolo)) / 2;
         int yCentro = (altura / 2) + (fm.getAscent() / 3);
         g2.drawString(simbolo, xCentro, yCentro);
 
-        g2.setColor(Color.WHITE);
-        if (carta.cor == Carta.Cor.AMARELO) g2.setColor(Color.BLACK); 
-        g2.setFont(new Font("Arial", Font.BOLD, 14));
+        g2.setColor(carta.tipo == Carta.Tipo.NUMERO ? Color.BLACK : Color.WHITE);
+        g2.setFont(new Font("SansSerif", Font.BOLD, 16));
         g2.drawString(simbolo, 8, 20);
 
         g2.translate(largura - 8, altura - 8);
@@ -353,11 +329,6 @@ public class UnoGUI extends JFrame {
         g2.translate(-(largura - 8), -(altura - 8));
     }
 
-    /**
-     * Retorna a representação textual apropriada/ícone em modo caracter para renderização visual.
-     * * @param carta Objeto carta de origem.
-     * @return String contendo o texto (números) ou símbolo da respectiva ação.
-     */
     private String obterSimboloDaCarta(Carta carta) {
         if (carta.tipo == Carta.Tipo.NUMERO) {
             return String.valueOf(carta.valor_numerico);
@@ -365,34 +336,98 @@ public class UnoGUI extends JFrame {
         switch (carta.tipo) {
             case MAIS_DOIS: return "+2";
             case MAIS_QUATRO: return "+4";
-            case INVERTER: return "↺";
-            case BLOQUEAR: return "Ø";
-            case MUDA_COR: return "cor";
+            case INVERTER: return "REV";
+            case BLOQUEAR: return "X";
+            case MUDA_COR: return "COR";
             default: return "";
         }
     }
 
-    /**
-     * Mapeia as propriedades da Enum Carta.Cor para instâncias de java.awt.Color
-     * * @param cor Enumeração da cor desejada.
-     * @return Cor computacional nativa da API Swing.
-     */
     private Color obterCorJava(Carta.Cor cor) {
         switch (cor) {
             case VERMELHO: return new Color(220, 20, 60);
             case AZUL: return new Color(30, 144, 255);
             case VERDE: return new Color(34, 139, 34);
             case AMARELO: return new Color(255, 215, 0);
-            case PRETO: return Color.DARK_GRAY;
+            case PRETO: return new Color(34, 38, 44);
             default: return Color.WHITE;
         }
     }
 
-    /**
-     * Rotina executada sempre que um usuário clica numa carta válida em sua mão.
-     * Transfere a carta da mão para o descarte, valida vitória e roda os efeitos especiais.
-     * * @param cartaEscolhida Carta selecionada via interface.
-     */
+    private JPanel criarAreaMesa(String titulo, JComponent componente) {
+        JPanel area = new JPanel(new BorderLayout(0, 10));
+        area.setOpaque(false);
+
+        JLabel label = new JLabel(titulo, SwingConstants.CENTER);
+        label.setForeground(Color.WHITE);
+        label.setFont(new Font("SansSerif", Font.BOLD, 14));
+
+        area.add(label, BorderLayout.NORTH);
+        area.add(componente, BorderLayout.CENTER);
+        return area;
+    }
+
+    private String resumoJogadores(Jogador atual) {
+        StringBuilder resumo = new StringBuilder("Maos: ");
+        for (int i = 0; i < listaJogadores.size(); i++) {
+            Jogador jogador = listaJogadores.get(i);
+            if (i > 0) resumo.append("   ");
+            resumo.append(jogador == atual ? ">" : "");
+            resumo.append(jogador.getNome()).append(" (").append(jogador.getQuantidadeCartas()).append(")");
+        }
+        return resumo.toString();
+    }
+
+    private Color clarear(Color cor, int quantidade) {
+        return new Color(
+                Math.min(255, cor.getRed() + quantidade),
+                Math.min(255, cor.getGreen() + quantidade),
+                Math.min(255, cor.getBlue() + quantidade));
+    }
+
+    private Color escurecer(Color cor, int quantidade) {
+        return new Color(
+                Math.max(0, cor.getRed() - quantidade),
+                Math.max(0, cor.getGreen() - quantidade),
+                Math.max(0, cor.getBlue() - quantidade));
+    }
+
+    private void desenharVersoCarta(Graphics2D g2, int largura, int altura) {
+        g2.setColor(new Color(0, 0, 0, 70));
+        g2.fillRoundRect(5, 7, largura - 10, altura - 10, 22, 22);
+        GradientPaint fundo = new GradientPaint(0, 0, new Color(33, 43, 60), largura, altura, new Color(12, 17, 25));
+        g2.setPaint(fundo);
+        g2.fillRoundRect(2, 2, largura - 8, altura - 10, 22, 22);
+        g2.setColor(Color.WHITE);
+        g2.setStroke(new BasicStroke(4));
+        g2.drawRoundRect(5, 5, largura - 14, altura - 16, 18, 18);
+
+        g2.rotate(-Math.PI / 7, largura / 2.0, altura / 2.0);
+        g2.setColor(new Color(226, 32, 45));
+        g2.fillOval(16, 36, largura - 32, altura - 72);
+        g2.rotate(Math.PI / 7, largura / 2.0, altura / 2.0);
+
+        g2.setColor(Color.WHITE);
+        g2.setFont(new Font("SansSerif", Font.BOLD, 28));
+        FontMetrics fm = g2.getFontMetrics();
+        String texto = "UNO";
+        g2.drawString(texto, (largura - fm.stringWidth(texto)) / 2, altura / 2 + fm.getAscent() / 3);
+    }
+
+    private void desenharCoresCoringa(Graphics2D g2, int largura, int altura) {
+        int centroX = largura / 2;
+        int centroY = altura / 2;
+        int raio = 33;
+        g2.setColor(obterCorJava(Carta.Cor.VERMELHO));
+        g2.fillArc(centroX - raio, centroY - raio, raio * 2, raio * 2, 0, 90);
+        g2.setColor(obterCorJava(Carta.Cor.AZUL));
+        g2.fillArc(centroX - raio, centroY - raio, raio * 2, raio * 2, 90, 90);
+        g2.setColor(obterCorJava(Carta.Cor.VERDE));
+        g2.fillArc(centroX - raio, centroY - raio, raio * 2, raio * 2, 180, 90);
+        g2.setColor(obterCorJava(Carta.Cor.AMARELO));
+        g2.fillArc(centroX - raio, centroY - raio, raio * 2, raio * 2, 270, 90);
+    }
+
     private void jogarCarta(Carta cartaEscolhida) {
         Jogador atual = jogadorAtual();
         atual.removerCarta(cartaEscolhida);
@@ -403,11 +438,6 @@ public class UnoGUI extends JFrame {
         processarEfeitoCartaGUI(cartaEscolhida);
     }
 
-    /**
-     * Desdobra as consequências de ações na GUI, avançando turnos, exibindo prompts
-     * e forçando saques de carta.
-     * * @param carta Carta jogada que instigará as ações subsequentes.
-     */
     private void processarEfeitoCartaGUI(Carta carta) {
         Carta topoAtual = mesaDescarte.get(mesaDescarte.size() - 1);
 
@@ -419,7 +449,7 @@ public class UnoGUI extends JFrame {
                 break;
             case BLOQUEAR:
                 avancarTurno();
-                JOptionPane.showMessageDialog(this, "PAAA!!! Acesso Negado!!! " + jogadorAtual().getNome() + " foi bloqueado e perde a vez!");
+                JOptionPane.showMessageDialog(this, jogadorAtual().getNome() + " foi bloqueado e perde a vez!");
                 avancarTurno();
                 break;
             case MAIS_DOIS:
@@ -438,7 +468,7 @@ public class UnoGUI extends JFrame {
                 avancarTurno();
                 Jogador vitima4 = jogadorAtual();
                 comprarCartasInterno(vitima4, 4);
-                JOptionPane.showMessageDialog(this, vitima4.getNome() + " tomou +4 cartas e perdeu a vez!");
+                JOptionPane.showMessageDialog(this, vitima4.getNome() + " recebeu +4 cartas e perdeu a vez!");
                 avancarTurno();
                 break;
             default:
@@ -448,10 +478,6 @@ public class UnoGUI extends JFrame {
         atualizarEcra();
     }
 
-    /**
-     * Dispara um modal (JOptionPane) que obriga o jogador atual a escolher a nova cor do descarte via menu.
-     * * @return Enum Cor que substituirá o preto da carta do descarte.
-     */
     private Carta.Cor escolherCorGUI() {
         Object[] opcoes = {"VERMELHO", "AZUL", "VERDE", "AMARELO"};
         int resposta = JOptionPane.showOptionDialog(this,
@@ -468,17 +494,13 @@ public class UnoGUI extends JFrame {
             case 1: return Carta.Cor.AZUL;
             case 2: return Carta.Cor.VERDE;
             case 3: return Carta.Cor.AMARELO;
-            default: return Carta.Cor.VERMELHO; 
+            default: return Carta.Cor.VERMELHO;
         }
     }
 
-    /**
-     * Evento atrelado ao clique no botão da pilha de saque.
-     * O jogador adquire uma nova carta e recebe a opção de jogar imediatamente caso seja legal.
-     */
     private void comprarCartaGUI() {
         Jogador atual = jogadorAtual();
-        
+
         if (baralho.isEmpty()) reciclarDescarte();
         if (baralho.isEmpty()) {
             JOptionPane.showMessageDialog(this, "O baralho acabou!");
@@ -492,30 +514,25 @@ public class UnoGUI extends JFrame {
         Carta topoMesa = mesaDescarte.get(mesaDescarte.size() - 1);
 
         if (jogadaEValida(comprada, topoMesa)) {
-            int resposta = JOptionPane.showConfirmDialog(this, 
-                "Comprou a carta: " + comprada.toString() + ".\nEsta carta é válida! Deseja jogá-la agora?", 
+            int resposta = JOptionPane.showConfirmDialog(this,
+                "Comprou a carta: " + comprada.toString() + ".\nEsta carta e valida! Deseja joga-la agora?",
                 "Carta Comprada", JOptionPane.YES_NO_OPTION);
-            
+
             if (resposta == JOptionPane.YES_OPTION) {
                 atual.removerCarta(comprada);
                 mesaDescarte.add(comprada);
                 if (verificarVitoria(atual)) return;
                 processarEfeitoCartaGUI(comprada);
-                return; 
+                return;
             }
         } else {
-            JOptionPane.showMessageDialog(this, "Comprou a carta: " + comprada.toString() + ".\nEla não serve para jogar. Passando a vez...");
+            JOptionPane.showMessageDialog(this, "Comprou a carta: " + comprada.toString() + ".\nEla nao serve para jogar. Passando a vez...");
         }
 
         avancarTurno();
         atualizarEcra();
     }
 
-    /**
-     * Função interna e silenciosa utilizada pelos efeitos +2 e +4 para transferir as penalidades.
-     * * @param jogador O Jogador alvo da punição.
-     * @param quantidade O número respectivo da punição.
-     */
     private void comprarCartasInterno(Jogador jogador, int quantidade) {
         for (int i = 0; i < quantidade; i++) {
             if (baralho.isEmpty()) reciclarDescarte();
@@ -525,9 +542,6 @@ public class UnoGUI extends JFrame {
         }
     }
 
-    /**
-     * Renova as pilhas pegando tudo exceto o topo do descarte e jogando no baralho principal.
-     */
     private void reciclarDescarte() {
         if (mesaDescarte.size() <= 1) return;
         Carta topo = mesaDescarte.remove(mesaDescarte.size() - 1);
@@ -538,15 +552,9 @@ public class UnoGUI extends JFrame {
         JOptionPane.showMessageDialog(this, "Baralho vazio! Descarte reciclado.");
     }
 
-    /**
-     * Avalia ao fim de cada jogada se algum jogador zerou a mão. 
-     * Acusa "UNO!" visualmente quando um jogador tem apenas uma carta na GUI.
-     * * @param jogador Jogador que executou a última jogada.
-     * @return true se confirmada a vitória encerrando a JVM, false no modo contrário.
-     */
     private boolean verificarVitoria(Jogador jogador) {
         if (jogador.getQuantidadeCartas() == 0) {
-            JOptionPane.showMessageDialog(this, "VITÓRIA!\n" + jogador.getNome() + " venceu o jogo de Uno!");
+            JOptionPane.showMessageDialog(this, "VITORIA!\n" + jogador.getNome() + " venceu o jogo de Uno!");
             System.exit(0);
             return true;
         }
@@ -556,13 +564,9 @@ public class UnoGUI extends JFrame {
         return false;
     }
 
-    /**
-     * Entrada principal para instanciar a versão com interface gráfica do jogo.
-     * * @param args Argumentos de linha de comando.
-     */
     public static void main(String[] args) {
         try { UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName()); } catch (Exception e) {}
-        
+
         SwingUtilities.invokeLater(() -> {
             UnoGUI jogo = new UnoGUI();
             jogo.setVisible(true);
