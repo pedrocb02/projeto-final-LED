@@ -33,12 +33,13 @@ public class UnoGUI extends JFrame {
 
     /** Define se a rotacao de turnos segue no sentido horario. */
     private boolean sentidoHorario = true;
+    private boolean jogoEncerrado = false;
 
     private JPanel painelMesa;
     private JPanel painelMao;
+    private JPanel painelJogadores;
     private JLabel lblStatus;
     private JLabel lblTopo;
-    private JLabel lblJogadores;
     private JButton btnComprar;
 
     public UnoGUI() {
@@ -54,6 +55,13 @@ public class UnoGUI extends JFrame {
     }
 
     private void configurarPartidaGUI() {
+        listaJogadores.clear();
+        baralho.clear();
+        mesaDescarte.clear();
+        indiceAtual = 0;
+        sentidoHorario = true;
+        jogoEncerrado = false;
+
         String qtdStr = JOptionPane.showInputDialog(this, "Quantas pessoas vao jogar (minimo 2)?", "Configuracao", JOptionPane.QUESTION_MESSAGE);
         if (qtdStr == null) System.exit(0);
 
@@ -78,6 +86,8 @@ public class UnoGUI extends JFrame {
         inicializarBaralho();
         Collections.shuffle(baralho);
         prepararPartida();
+        getContentPane().removeAll();
+        setLayout(new BorderLayout());
         construirInterfacePrincipal();
         atualizarEcra();
     }
@@ -95,13 +105,12 @@ public class UnoGUI extends JFrame {
         lblTopo.setForeground(COR_DESTAQUE);
         lblTopo.setFont(new Font("SansSerif", Font.BOLD, 24));
 
-        lblJogadores = new JLabel("", SwingConstants.CENTER);
-        lblJogadores.setForeground(COR_TEXTO_SUAVE);
-        lblJogadores.setFont(new Font("SansSerif", Font.PLAIN, 13));
+        painelJogadores = new JPanel(new FlowLayout(FlowLayout.CENTER, 8, 0));
+        painelJogadores.setOpaque(false);
 
         painelStatus.add(lblStatus);
         painelStatus.add(lblTopo);
-        painelStatus.add(lblJogadores);
+        painelStatus.add(painelJogadores);
         add(painelStatus, BorderLayout.NORTH);
 
         painelMesa = new JPanel(new GridBagLayout()) {
@@ -217,6 +226,15 @@ public class UnoGUI extends JFrame {
         return false;
     }
 
+    private boolean jogadorTemCartaValida(Jogador jogador, Carta cartaTopo) {
+        for (Carta carta : jogador.getMao()) {
+            if (jogadaEValida(carta, cartaTopo)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     private void atualizarEcra() {
         Jogador atual = jogadorAtual();
         Carta topoMesa = mesaDescarte.get(mesaDescarte.size() - 1);
@@ -224,7 +242,10 @@ public class UnoGUI extends JFrame {
         String direcao = sentidoHorario ? "Horario" : "Anti-horario";
         lblStatus.setText("Vez de " + atual.getNome() + "  |  Sentido: " + direcao + "  |  Baralho: " + baralho.size() + " cartas");
         lblTopo.setText("Carta da mesa: " + topoMesa.toString());
-        lblJogadores.setText(resumoJogadores(atual));
+        atualizarResumoJogadores(atual);
+        boolean podeComprar = !jogadorTemCartaValida(atual, topoMesa);
+        btnComprar.setEnabled(podeComprar);
+        btnComprar.setToolTipText(podeComprar ? "Comprar uma carta do baralho" : "Voce ainda tem uma carta que pode jogar");
 
         painelMesa.removeAll();
         painelMesa.add(criarAreaMesa("Baralho", btnComprar));
@@ -264,11 +285,11 @@ public class UnoGUI extends JFrame {
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                 desenharCartaPorCodigo(g2, carta, getWidth(), getHeight());
 
-                if (!isEnabled()) {
-                    g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.45f));
-                    g2.setColor(new Color(5, 8, 12, 130));
-                    g2.fillRoundRect(2, 2, getWidth() - 8, getHeight() - 10, 22, 22);
-                }
+                //if (!isEnabled()) {
+                //    g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.45f));
+                 //   g2.setColor(new Color(5, 8, 12, 130));
+                 //   g2.fillRoundRect(2, 2, getWidth() - 8, getHeight() - 10, 22, 22);
+                //}
                 g2.dispose();
             }
         };
@@ -288,11 +309,11 @@ public class UnoGUI extends JFrame {
 
         Shape cartaClip = new RoundRectangle2D.Double(2, 2, largura - 8, altura - 10, 22, 22);
         g2.setClip(cartaClip);
-        GradientPaint fundo = new GradientPaint(0, 0, clarear(obterCorJava(carta.cor), 32), largura, altura, escurecer(obterCorJava(carta.cor), 34));
+        GradientPaint fundo = new GradientPaint(0, 0, clarear(obterCorJava(carta.cor), 36), largura, altura, obterCorJava(carta.cor));
         g2.setPaint(fundo);
         g2.fill(cartaClip);
 
-        g2.setColor(new Color(255, 255, 255, 36));
+        g2.setColor(new Color(255, 255, 255, 58));
         g2.fillOval(-largura / 3, -altura / 4, largura, altura / 2);
 
         g2.setColor(Color.WHITE);
@@ -310,23 +331,12 @@ public class UnoGUI extends JFrame {
 
         String simbolo = obterSimboloDaCarta(carta);
 
+        g2.setClip(cartaClip);
+        g2.setColor(obterCorSimbolo(carta));
+        desenharTextoCentralizado(g2, simbolo, largura, altura);
+        desenharSimboloCanto(g2, simbolo, largura, altura, true);
+        desenharSimboloCanto(g2, simbolo, largura, altura, false);
         g2.setClip(null);
-        g2.setColor(carta.tipo == Carta.Tipo.NUMERO ? Color.BLACK : Color.WHITE);
-        g2.setFont(new Font("SansSerif", Font.BOLD, simbolo.length() > 2 ? 34 : 50));
-        FontMetrics fm = g2.getFontMetrics();
-        int xCentro = (largura - fm.stringWidth(simbolo)) / 2;
-        int yCentro = (altura / 2) + (fm.getAscent() / 3);
-        g2.drawString(simbolo, xCentro, yCentro);
-
-        g2.setColor(carta.tipo == Carta.Tipo.NUMERO ? Color.BLACK : Color.WHITE);
-        g2.setFont(new Font("SansSerif", Font.BOLD, 16));
-        g2.drawString(simbolo, 8, 20);
-
-        g2.translate(largura - 8, altura - 8);
-        g2.rotate(Math.PI);
-        g2.drawString(simbolo, 0, 4);
-        g2.rotate(-Math.PI);
-        g2.translate(-(largura - 8), -(altura - 8));
     }
 
     private String obterSimboloDaCarta(Carta carta) {
@@ -345,13 +355,54 @@ public class UnoGUI extends JFrame {
 
     private Color obterCorJava(Carta.Cor cor) {
         switch (cor) {
-            case VERMELHO: return new Color(220, 20, 60);
-            case AZUL: return new Color(30, 144, 255);
-            case VERDE: return new Color(34, 139, 34);
-            case AMARELO: return new Color(255, 215, 0);
-            case PRETO: return new Color(34, 38, 44);
+            case VERMELHO: return new Color(215, 38, 0); // Vermelho pastel
+            case AZUL:     return new Color(9, 86, 191); // Azul pastel
+            case VERDE:    return new Color(55, 151, 17); // Verde pastel
+            case AMARELO:  return new Color(255, 204, 0); // Amarelo pastel   // Amarelo puro
+            case PRETO:    return new Color(35, 35, 35);     // Quase preto
             default: return Color.WHITE;
         }
+    }
+
+    private Color obterCorSimbolo(Carta carta) {
+        return Color.BLACK;
+    }
+
+    private void desenharTextoCentralizado(Graphics2D g2, String texto, int largura, int altura) {
+        int tamanhoFonte = texto.length() > 2 ? 30 : 50;
+        Font fonte = new Font("SansSerif", Font.BOLD, tamanhoFonte);
+        g2.setFont(fonte);
+        FontMetrics fm = g2.getFontMetrics();
+
+        while (fm.stringWidth(texto) > largura - 34 && tamanhoFonte > 18) {
+            tamanhoFonte -= 2;
+            fonte = new Font("SansSerif", Font.BOLD, tamanhoFonte);
+            g2.setFont(fonte);
+            fm = g2.getFontMetrics();
+        }
+
+        int xCentro = (largura - fm.stringWidth(texto)) / 2;
+        int yCentro = (altura - fm.getHeight()) / 2 + fm.getAscent();
+        g2.drawString(texto, xCentro, yCentro);
+    }
+
+    private void desenharSimboloCanto(Graphics2D g2, String texto, int largura, int altura, boolean topo) {
+        int tamanhoFonte = texto.length() > 2 ? 13 : 16;
+        Font fonte = new Font("SansSerif", Font.BOLD, tamanhoFonte);
+        g2.setFont(fonte);
+        FontMetrics fm = g2.getFontMetrics();
+
+        while (fm.stringWidth(texto) > 30 && tamanhoFonte > 10) {
+            tamanhoFonte--;
+            fonte = new Font("SansSerif", Font.BOLD, tamanhoFonte);
+            g2.setFont(fonte);
+            fm = g2.getFontMetrics();
+        }
+
+        int margem = 10;
+        int x = topo ? margem : largura - margem - fm.stringWidth(texto);
+        int y = topo ? margem + fm.getAscent() : altura - margem - fm.getDescent();
+        g2.drawString(texto, x, y);
     }
 
     private JPanel criarAreaMesa(String titulo, JComponent componente) {
@@ -367,15 +418,24 @@ public class UnoGUI extends JFrame {
         return area;
     }
 
-    private String resumoJogadores(Jogador atual) {
-        StringBuilder resumo = new StringBuilder("Maos: ");
-        for (int i = 0; i < listaJogadores.size(); i++) {
-            Jogador jogador = listaJogadores.get(i);
-            if (i > 0) resumo.append("   ");
-            resumo.append(jogador == atual ? ">" : "");
-            resumo.append(jogador.getNome()).append(" (").append(jogador.getQuantidadeCartas()).append(")");
+    private void atualizarResumoJogadores(Jogador atual) {
+        painelJogadores.removeAll();
+
+        for (Jogador jogador : listaJogadores) {
+            boolean jogadorDaVez = jogador == atual;
+            JLabel chip = new JLabel(jogador.getNome() + "  |  " + jogador.getQuantidadeCartas() + " cartas");
+            chip.setOpaque(true);
+            chip.setForeground(jogadorDaVez ? new Color(20, 24, 31) : COR_TEXTO_SUAVE);
+            chip.setBackground(jogadorDaVez ? COR_DESTAQUE : new Color(42, 53, 68));
+            chip.setFont(new Font("SansSerif", jogadorDaVez ? Font.BOLD : Font.PLAIN, 12));
+            chip.setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createLineBorder(jogadorDaVez ? new Color(255, 221, 120) : new Color(80, 94, 112), 1),
+                    BorderFactory.createEmptyBorder(4, 10, 4, 10)));
+            painelJogadores.add(chip);
         }
-        return resumo.toString();
+
+        painelJogadores.revalidate();
+        painelJogadores.repaint();
     }
 
     private Color clarear(Color cor, int quantidade) {
@@ -500,6 +560,13 @@ public class UnoGUI extends JFrame {
 
     private void comprarCartaGUI() {
         Jogador atual = jogadorAtual();
+        Carta topoMesa = mesaDescarte.get(mesaDescarte.size() - 1);
+
+        if (jogadorTemCartaValida(atual, topoMesa)) {
+            JOptionPane.showMessageDialog(this, "Voce ainda tem uma carta valida na mao. Jogue uma carta antes de comprar.");
+            atualizarEcra();
+            return;
+        }
 
         if (baralho.isEmpty()) reciclarDescarte();
         if (baralho.isEmpty()) {
@@ -511,7 +578,6 @@ public class UnoGUI extends JFrame {
 
         Carta comprada = baralho.remove(0);
         atual.adicionarCarta(comprada);
-        Carta topoMesa = mesaDescarte.get(mesaDescarte.size() - 1);
 
         if (jogadaEValida(comprada, topoMesa)) {
             int resposta = JOptionPane.showConfirmDialog(this,
@@ -554,14 +620,137 @@ public class UnoGUI extends JFrame {
 
     private boolean verificarVitoria(Jogador jogador) {
         if (jogador.getQuantidadeCartas() == 0) {
-            JOptionPane.showMessageDialog(this, "VITORIA!\n" + jogador.getNome() + " venceu o jogo de Uno!");
-            System.exit(0);
+            jogoEncerrado = true;
+            mostrarTelaFinal(jogador);
             return true;
         }
         if (jogador.getQuantidadeCartas() == 1) {
             JOptionPane.showMessageDialog(this, jogador.getNome() + " grita: UNO!!!");
         }
         return false;
+    }
+
+    private void mostrarTelaFinal(Jogador vencedor) {
+        getContentPane().removeAll();
+        getContentPane().setLayout(new BorderLayout());
+
+        JPanel telaFinal = new JPanel(new GridBagLayout()) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_OFF);
+
+                g2.setColor(new Color(12, 16, 24));
+                g2.fillRect(0, 0, getWidth(), getHeight());
+
+                g2.setColor(new Color(22, 29, 41));
+                for (int y = 0; y < getHeight(); y += 8) {
+                    g2.fillRect(0, y, getWidth(), 1);
+                }
+
+                int larguraCaixa = Math.min(620, getWidth() - 80);
+                int alturaCaixa = 330;
+                int x = (getWidth() - larguraCaixa) / 2;
+                int y = (getHeight() - alturaCaixa) / 2;
+                desenharMolduraRetro(g2, x, y, larguraCaixa, alturaCaixa);
+                g2.dispose();
+            }
+        };
+
+        JPanel conteudo = new JPanel();
+        conteudo.setOpaque(false);
+        conteudo.setLayout(new BoxLayout(conteudo, BoxLayout.Y_AXIS));
+
+        JLabel titulo = new JLabel("VITORIA", SwingConstants.CENTER);
+        titulo.setAlignmentX(Component.CENTER_ALIGNMENT);
+        titulo.setForeground(new Color(108, 255, 171));
+        titulo.setFont(new Font("Monospaced", Font.BOLD, 58));
+
+        JLabel nome = new JLabel("PLAYER: " + vencedor.getNome().toUpperCase(), SwingConstants.CENTER);
+        nome.setAlignmentX(Component.CENTER_ALIGNMENT);
+        nome.setForeground(new Color(255, 225, 98));
+        nome.setFont(new Font("Monospaced", Font.BOLD, 24));
+
+        JLabel detalhe = new JLabel("JOGO FINALIZADO", SwingConstants.CENTER);
+        detalhe.setAlignmentX(Component.CENTER_ALIGNMENT);
+        detalhe.setForeground(new Color(141, 158, 180));
+        detalhe.setFont(new Font("Monospaced", Font.PLAIN, 15));
+
+        JButton reiniciar = criarBotaoReiniciar();
+        reiniciar.setAlignmentX(Component.CENTER_ALIGNMENT);
+        reiniciar.addActionListener(e -> reiniciarJogoDoZero());
+
+        conteudo.add(titulo);
+        conteudo.add(Box.createVerticalStrut(18));
+        conteudo.add(nome);
+        conteudo.add(Box.createVerticalStrut(10));
+        conteudo.add(detalhe);
+        conteudo.add(Box.createVerticalStrut(38));
+        conteudo.add(reiniciar);
+
+        telaFinal.add(conteudo);
+        getContentPane().add(telaFinal, BorderLayout.CENTER);
+        revalidate();
+        repaint();
+    }
+
+    private JButton criarBotaoReiniciar() {
+        JButton botao = new JButton("JOGAR NOVAMENTE") {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_OFF);
+                boolean hover = getModel().isRollover();
+                setForeground(hover ? new Color(12, 16, 24) : new Color(108, 255, 171));
+                g2.setColor(hover ? new Color(108, 255, 171) : new Color(18, 24, 34));
+                g2.fillRect(0, 0, getWidth(), getHeight());
+                g2.setColor(new Color(108, 255, 171));
+                g2.setStroke(new BasicStroke(3));
+                g2.drawRect(1, 1, getWidth() - 3, getHeight() - 3);
+                g2.dispose();
+                super.paintComponent(g);
+            }
+        };
+        botao.setPreferredSize(new Dimension(240, 48));
+        botao.setMaximumSize(new Dimension(240, 48));
+        botao.setForeground(new Color(12, 16, 24));
+        botao.setFont(new Font("Monospaced", Font.BOLD, 15));
+        botao.setContentAreaFilled(false);
+        botao.setBorderPainted(false);
+        botao.setFocusPainted(false);
+        botao.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        return botao;
+    }
+
+    private void reiniciarJogoDoZero() {
+        getContentPane().removeAll();
+        revalidate();
+        repaint();
+        configurarPartidaGUI();
+    }
+
+    private void desenharMolduraRetro(Graphics2D g2, int x, int y, int largura, int altura) {
+        g2.setColor(new Color(5, 8, 14));
+        g2.fillRect(x + 8, y + 8, largura, altura);
+
+        g2.setColor(new Color(18, 24, 34));
+        g2.fillRect(x, y, largura, altura);
+
+        g2.setColor(new Color(108, 255, 171));
+        g2.setStroke(new BasicStroke(4));
+        g2.drawRect(x, y, largura, altura);
+
+        g2.setColor(new Color(255, 225, 98));
+        g2.setStroke(new BasicStroke(2));
+        g2.drawRect(x + 12, y + 12, largura - 24, altura - 24);
+
+        g2.setColor(new Color(108, 255, 171));
+        int bloco = 10;
+        g2.fillRect(x - bloco, y - bloco, bloco * 2, bloco * 2);
+        g2.fillRect(x + largura - bloco, y - bloco, bloco * 2, bloco * 2);
+        g2.fillRect(x - bloco, y + altura - bloco, bloco * 2, bloco * 2);
+        g2.fillRect(x + largura - bloco, y + altura - bloco, bloco * 2, bloco * 2);
     }
 
     public static void main(String[] args) {
